@@ -20,12 +20,12 @@ def parse_args():
     parser.add_argument('--max_train_samples', type=int, default=-1)
     parser.add_argument('--max_eval_samples', type=int, default=-1)
     parser.add_argument('--max_predict_samples', type=int, default=-1)
-    parser.add_argument('--num_train_epochs', type=int, required=True)
-    parser.add_argument('--lr', type=float, required=True)
-    parser.add_argument('--batch_size', type=int, required=True)
+    parser.add_argument('--num_train_epochs', type=int)
+    parser.add_argument('--lr', type=float)
+    parser.add_argument('--batch_size', type=int)
     parser.add_argument('--do_train', action='store_true')
     parser.add_argument('--do_predict', action='store_true')
-    parser.add_argument('--model_path', type=str, required=True)
+    parser.add_argument('--model_path', type=str)
 
     return parser.parse_args()
 
@@ -53,6 +53,17 @@ def main():
 
     tokenized_datasets = raw_datasets.map(lambda x: preprocess_function(x, tokenizer), batched=True)
 
+    if not args.do_train and not args.do_predict:
+        print("Error:  must choose one of [do_train, do_predict]")
+
+    if args.do_train:
+        if not args.num_train_epochs or not args.batch_size or not args.lr:
+            print("Error: --num_train_epocs, --batch_size and --lr are required if do_train is set to True.")
+
+    if args.do_predict:
+        if not args.model_path:
+            print("Error: --model_path is required if do_train is set to True.")
+
     # if I had more time these were all done by a single function :)
     if args.max_train_samples != -1:
         tokenized_datasets["train"] = tokenized_datasets["train"].select(range(args.max_train_samples))
@@ -75,7 +86,6 @@ def main():
         num_train_epochs=args.num_train_epochs,
         eval_strategy="epoch",
         save_strategy="epoch",
-        logging_dir=LOG_DIR,
         logging_steps=1,  
         save_total_limit=1,
         load_best_model_at_end=True,
